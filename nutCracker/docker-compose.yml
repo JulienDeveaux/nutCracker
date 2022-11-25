@@ -1,14 +1,15 @@
 version: '3'
 
 services: 
-  nut-cracker:
+  nut_cracker:
     build: .
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
       - "9512:80"
     networks: 
-      - nutCracker
-        
+      - nut_cracker
+
 networks:
-  nutCracker:
+  nut_cracker:
+    driver: overlay

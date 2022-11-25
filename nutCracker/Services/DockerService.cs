@@ -40,7 +40,18 @@ public class DockerService
                     {
                         ContainerSpec = new ContainerSpec
                         {
-                            Image = "servuc/hash_extractor"
+                            Image = "servuc/hash_extractor",
+                            Command = new List<string>
+                            {
+                                "./hash_extractor", "s", "ws://nut_cracker/ws"
+                            }
+                        }
+                    },
+                    Networks = new List<NetworkAttachmentConfig>
+                    {
+                        new NetworkAttachmentConfig
+                        {
+                            Target = "nutcracker_nut_cracker"
                         }
                     }
                 }
