@@ -1,0 +1,14 @@
+version: '3'
+
+services: 
+  nut-cracker:
+    build: .
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - "9512:80"
+    networks: 
+      - nutCracker
+        
+networks:
+  nutCracker:
