@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<DockerService>();
+builder.Services.AddSingleton<WebsocketService>();
 
 var app = builder.Build();
 

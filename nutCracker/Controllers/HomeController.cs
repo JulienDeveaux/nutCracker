@@ -12,11 +12,16 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     
     private DockerService DockerService { get; }
+    private WebsocketService WebsocketService { get; }
 
-    public HomeController(ILogger<HomeController> logger, DockerService dockerService)
+    public HomeController(
+        ILogger<HomeController> logger, 
+        DockerService dockerService,
+        WebsocketService websocketService)
     {
         _logger = logger;
         DockerService = dockerService;
+        WebsocketService = websocketService;
     }
 
     public async Task<IActionResult> Index()
@@ -33,17 +38,7 @@ public class HomeController : Controller
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
 
-            var buffer = new byte[4 * 1024];
-
-            WebSocketReceiveResult received = null;
-
-            do
-            {
-                received = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                Console.WriteLine(Encoding.ASCII.GetString(buffer));
-            } 
-            while (!received.CloseStatus.HasValue);
+            await WebsocketService.RegisterSlave(webSocket);
         }
         else
         {
