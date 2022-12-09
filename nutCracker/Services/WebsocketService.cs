@@ -6,6 +6,14 @@ namespace nutCracker.Services;
 
 public class WebsocketService
 {
+    public const int MaxPasswordLength = 4;
+    // [a-zA-Z0-9]                  //min/ maj/ nb
+    public static readonly char[] CharactersAvailable = {
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    };
+    
     private static int _totalSlavesCount = 0;
     
     private List<Slave> Slaves { get; }
@@ -108,11 +116,15 @@ public class WebsocketService
     private string[] DetermineAlphabets(int nbSlaves)
     {
         var alphabets = new string[nbSlaves];
+        
+        var nb = MaxPasswordLength / nbSlaves;
 
         // todo split alphabet in nbSlaves parts
-        for (int i = 0; i < nbSlaves; i++)
+        for (var i = 0; i < nbSlaves; i++)
         {
-            alphabets[i] = "[a-zA-Z0-9]|[a-zA-Z0-9]";
+            var nextNb = nb * (i + 1);
+
+            alphabets[i] = $"{CharactersAvailable[nb * i]}|{(string.Join("", new char[MaxPasswordLength].Select(_ => CharactersAvailable[Math.Min(nextNb, CharactersAvailable.Length - 1)])))}";
         }
         
         return alphabets;
