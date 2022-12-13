@@ -13,3 +13,4 @@ services:
 networks:
   nut_cracker:
     driver: overlay
+    attachable: true
