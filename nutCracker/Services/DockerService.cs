@@ -11,9 +11,19 @@ public class DockerService
     
     public DockerService()
     {
-        Client = new DockerClientConfiguration(
-                new Uri("unix:///var/run/docker.sock"))
-            .CreateClient();
+        /*
+         * windows with docker desktop: npipe://./pipe/docker_engine
+         * linux: unix:///var/run/docker.sock
+        */
+
+        var socketSystem = Environment.OSVersion.Platform switch
+        {
+            PlatformID.Unix => "unix:///var/run/docker.sock",
+            PlatformID.Win32S or PlatformID.Win32Windows or PlatformID.Win32NT or PlatformID.WinCE => "npipe://./pipe/docker_engine",
+            _ => throw new PlatformNotSupportedException()
+        };
+        
+        Client = new DockerClientConfiguration(new Uri(socketSystem)).CreateClient();
     }
 
     public async Task InitService(bool forceReload = false)
@@ -61,5 +71,20 @@ public class DockerService
         }
 
         SlavesService = services.FirstOrDefault();
+    }
+
+    public async Task AddNewSlave()
+    {
+        var serviceSpec = SlavesService.Spec;
+
+        serviceSpec.Mode.Replicated.Replicas++;
+        
+        var response = await Client.Swarm.UpdateServiceAsync(SlavesService.ID, new ServiceUpdateParameters
+        {
+            Service = serviceSpec,
+            Version = (long) SlavesService.Version.Index
+        });
+        
+        SlavesService = await Client.Swarm.InspectServiceAsync(SlavesService.ID);
     }
 }

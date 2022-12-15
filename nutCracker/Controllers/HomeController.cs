@@ -35,9 +35,19 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> Index(string hash)
     {
-        if (WebsocketService.GetNbSlavesDispo() == 0)
+        if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) == 0)
         {
+            int nbSlaves = WebsocketService.GetNbSlaves();
+            await DockerService.AddNewSlave();
             
+            Console.WriteLine("awaiting new slave");
+            
+            while(nbSlaves == WebsocketService.GetNbSlaves())
+            {
+                await Task.Delay(1000);
+            }
+            
+            Console.WriteLine("new slave available");
         }
         
         var mdp = await WebsocketService.Crack(hash);

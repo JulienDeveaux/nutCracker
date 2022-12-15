@@ -27,9 +27,9 @@ public class WebsocketService
         Md5Hashes = new Dictionary<string, string>();
     }
 
-    public int GetNbSlavesDispo()
+    public int GetNbSlaves(SlaveStatus? status = null)
     {
-        return Slaves.Count(slave => slave.Status == SlaveStatus.Ready);
+        return Slaves.Count(slave => status is null || slave.Status == status);
     }
 
     public async Task RegisterSlave(WebSocket socket)
