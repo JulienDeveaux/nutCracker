@@ -28,8 +28,22 @@ public class DockerService
 
     public async Task InitService(bool forceReload = false)
     {
-        if (!forceReload && SlavesService is not null)
-            return;
+
+
+        if (SlavesService is not null)
+        {
+            try
+            {
+                await Client.Swarm.InspectServiceAsync(SlavesService.ID);
+                    
+                if(!forceReload)
+                    return;
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
 
         var services = (await Client.Swarm.ListServicesAsync(new ServicesListParameters
         {

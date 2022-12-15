@@ -89,7 +89,7 @@ public class WebsocketService
     /// </returns>
     public async Task<string> Crack(string md5Hash)
     {
-        var waitingSlaves = Slaves.Where(s => s.Status == SlaveStatus.Ready).ToArray();
+        var waitingSlaves = Slaves.Where(s => s.Status == SlaveStatus.Ready && s.WebSocket.State == WebSocketState.Open).ToArray();
 
         if (waitingSlaves.Length == 0)
             return null;

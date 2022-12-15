@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using nutCracker.Models;
 using nutCracker.Services;
@@ -35,6 +36,12 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> Index(string hash)
     {
+        if (!Regex.IsMatch(hash, "^[a-f0-9]{32}$"))
+            return BadRequest(new
+            {
+                error = "Invalid hash"
+            });
+        
         if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) == 0)
         {
             int nbSlaves = WebsocketService.GetNbSlaves();
@@ -53,12 +60,21 @@ public class HomeController : Controller
         var mdp = await WebsocketService.Crack(hash);
         
         if(mdp == null)
-            return StatusCode(500, "Une erreur est survenue");
+            return StatusCode(500, new
+            {
+                error = "Une erreur est survenue"
+            });
         
         if(string.IsNullOrWhiteSpace(mdp))
-            return NotFound("Le hash n'a pas été trouvé");
+            return NotFound(new
+            {
+                error = "Le hash n'a pas été trouvé"
+            });
 
-        return Ok(mdp);
+        return Ok(new
+        {
+            mdp
+        });
     }
     
     [Route("/ws")]
