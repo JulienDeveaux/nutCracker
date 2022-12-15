@@ -101,4 +101,9 @@ public class DockerService
         
         SlavesService = await Client.Swarm.InspectServiceAsync(SlavesService.ID);
     }
+
+    public async Task DeleteService()
+    {
+        await Client.Swarm.RemoveServiceAsync(SlavesService.ID);
+    }
 }

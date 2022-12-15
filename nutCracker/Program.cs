@@ -32,4 +32,15 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+var dockerService = app.Services.GetService<DockerService>();
+
+try
+{
+    await app.RunAsync();
+}
+catch (Exception e)
+{
+    Console.Error.WriteLine(e);
+}
+
+await dockerService.DeleteService();
