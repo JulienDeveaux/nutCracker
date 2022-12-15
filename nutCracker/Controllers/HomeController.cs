@@ -33,50 +33,6 @@ public class HomeController : Controller
         return View();
     }
     
-    [HttpPost]
-    public async Task<IActionResult> Index(string hash)
-    {
-        if (!Regex.IsMatch(hash, "^[a-f0-9]{32}$"))
-            return BadRequest(new
-            {
-                error = "Invalid hash"
-            });
-        
-        if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) == 0)
-        {
-            int nbSlaves = WebsocketService.GetNbSlaves();
-            await DockerService.AddNewSlave();
-            
-            Console.WriteLine("awaiting new slave");
-            
-            while(nbSlaves == WebsocketService.GetNbSlaves())
-            {
-                await Task.Delay(1000);
-            }
-            
-            Console.WriteLine("new slave available");
-        }
-        
-        var mdp = await WebsocketService.Crack(hash);
-        
-        if(mdp == null)
-            return StatusCode(500, new
-            {
-                error = "Une erreur est survenue"
-            });
-        
-        if(string.IsNullOrWhiteSpace(mdp))
-            return NotFound(new
-            {
-                error = "Le hash n'a pas été trouvé"
-            });
-
-        return Ok(new
-        {
-            mdp
-        });
-    }
-    
     [Route("/ws")]
     public async Task WebSocket()
     {

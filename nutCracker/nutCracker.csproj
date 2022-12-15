@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="CurrieTechnologies.Razor.SweetAlert2" Version="5.4.0" />
       <PackageReference Include="Docker.DotNet" Version="3.125.12" />
     </ItemGroup>
 

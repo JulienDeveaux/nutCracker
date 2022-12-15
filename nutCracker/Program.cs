@@ -1,3 +1,4 @@
+using CurrieTechnologies.Razor.SweetAlert2;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using nutCracker.Services;
@@ -6,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddServerSideBlazor(o => o.DetailedErrors = true);
+builder.Services.AddSweetAlert2();
 
 builder.Services.AddSingleton<DockerService>();
 builder.Services.AddSingleton<WebsocketService>();
@@ -31,6 +34,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapBlazorHub();
 
 var dockerService = app.Services.GetService<DockerService>();
 

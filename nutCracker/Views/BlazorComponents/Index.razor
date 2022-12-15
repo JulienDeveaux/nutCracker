@@ -1,0 +1,110 @@
+﻿@using System.Text.RegularExpressions
+@using nutCracker.Models
+@using nutCracker.Services
+
+@inject WebsocketService WebsocketService
+@inject DockerService DockerService
+@inject SweetAlertService Swal
+
+<input type="text" class="form-control" @bind="Hash" @onkeyup="InputKeyEvent"/>
+
+@if (!string.IsNullOrWhiteSpace(ConstantMessage))
+{
+    <p>@ConstantMessage</p>
+}
+
+<button class="btn btn-success" @onclick="DeHash">Déhasher</button>
+
+@code 
+{
+    private string Hash { get; set; } = string.Empty;
+    private string ConstantMessage { get; set; } = string.Empty;
+    
+    private async Task InputKeyEvent(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await DeHash();
+        }
+    }
+
+    private async Task DeHash()
+    {
+        if (!Regex.IsMatch(Hash, "^[a-f0-9]{32}$"))
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erreur",
+                Icon = SweetAlertIcon.Error,
+                Text = "Le hash n'est pas valide"
+            });
+            
+            return;
+        }
+
+        _ = Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Déhashage en cours",
+            Icon = SweetAlertIcon.Info,
+            ShowLoaderOnConfirm = true,
+            PreConfirm = new PreConfirmCallback(async () =>
+            {
+                if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) == 0)
+                {
+                    var nbSlaves = WebsocketService.GetNbSlaves();
+            
+                    await DockerService.AddNewSlave();
+            
+                    Console.WriteLine("awaiting new slave");
+            
+                    while(nbSlaves == WebsocketService.GetNbSlaves())
+                    {
+                        await Task.Delay(1000);
+                    }
+            
+                    Console.WriteLine("new slave available");
+                }
+        
+                var mdp = await WebsocketService.Crack(Hash);
+
+                if (mdp == null)
+                {
+                    _ = Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Erreur",
+                        Icon = SweetAlertIcon.Error,
+                        Text = "Une erreur est survenue"
+                    });
+                    
+                    return string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(mdp))
+                {
+                    _ = Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Erreur",
+                        Icon = SweetAlertIcon.Error,
+                        Text = "Le hash n'a pas été trouvé"
+                    });
+                    
+                    return string.Empty;
+                }
+
+                _ = Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Succès",
+                    Icon = SweetAlertIcon.Success,
+                    Text = $"Résultat: {mdp}"
+                });
+                
+                ConstantMessage = $"Dernier résultat: {mdp}";
+                _ = InvokeAsync(StateHasChanged);
+
+                return null;
+            })
+        });
+        
+        await Swal.ClickConfirmAsync();
+    }
+}
