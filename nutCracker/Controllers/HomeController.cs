@@ -24,11 +24,31 @@ public class HomeController : Controller
         WebsocketService = websocketService;
     }
 
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
         await DockerService.InitService();
         
         return View();
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> Index(string hash)
+    {
+        if (WebsocketService.GetNbSlavesDispo() == 0)
+        {
+            
+        }
+        
+        var mdp = await WebsocketService.Crack(hash);
+        
+        if(mdp == null)
+            return StatusCode(500, "Une erreur est survenue");
+        
+        if(string.IsNullOrWhiteSpace(mdp))
+            return NotFound("Le hash n'a pas été trouvé");
+
+        return Ok(mdp);
     }
     
     [Route("/ws")]
