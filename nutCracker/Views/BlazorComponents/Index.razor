@@ -8,9 +8,28 @@
 
 <label>Hash:</label>
 <input type="text" class="form-control" @bind="Hash" @onkeyup="InputKeyEvent"/>
-
+<br/>
 <label>Taille (max) du mot de passe (attention, plus la taille est élevé plus cela est long): @MaxPasswordLength</label>
 <input type="range" class="form-range" min="@MinMaxPaswordLength" max="@MaxMaxPaswordLength" @bind="MaxPasswordLength" />
+
+<br/>
+
+<p class="text-start">Puissance:</p>
+@foreach (var power in Enum.GetValues<AlgoPower>())
+{
+    var powerValue = power.Value();
+    
+    <div class="w-100 text-start">
+        <div class="form-check form-check-inline">
+            <label class="form-check-label" for="power-@powerValue">@power (@powerValue))</label>
+            <input type="radio" 
+                   class="form-check-input" 
+                   name="power" id="power-@powerValue" 
+                   checked="@(power == Power)"
+                   @onchange="() => Power = power"/>
+        </div>
+    </div>
+}
 
 @if (!string.IsNullOrWhiteSpace(ConstantMessage))
 {
@@ -26,6 +45,7 @@
     
     private string Hash { get; set; } = string.Empty;
     private int MaxPasswordLength { get; set; } = 4;
+    private AlgoPower Power { get; set; } = AlgoPower.Classic;
     
     private string ConstantMessage { get; set; } = string.Empty;
     
