@@ -6,8 +6,6 @@ namespace nutCracker.Services;
 
 public class WebsocketService
 {
-    public const int MaxPasswordLength = 4;
-
     public const string Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private static int _totalSlavesCount = 0;
@@ -82,19 +80,20 @@ public class WebsocketService
     /// 
     /// </summary>
     /// <param name="md5Hash">Hash with max size is = <see cref="MaxPasswordLength"/></param>
+    /// <param name="maxPasswordLength"></param>
     /// <returns>
     ///  null value = pending <br/>
     ///  empty value = not found <br/>
     ///  value = found
     /// </returns>
-    public async Task<string> Crack(string md5Hash)
+    public async Task<string> Crack(string md5Hash, int maxPasswordLength)
     {
         var waitingSlaves = Slaves.Where(s => s.Status == SlaveStatus.Ready && s.WebSocket.State == WebSocketState.Open).ToArray();
 
         if (waitingSlaves.Length == 0)
             return null;
 
-        var allAlphabets = DetermineAlphabets(waitingSlaves.Length);
+        var allAlphabets = DetermineAlphabets(waitingSlaves.Length, maxPasswordLength);
 
         Console.WriteLine(string.Join("\n", allAlphabets));
         
@@ -126,20 +125,20 @@ public class WebsocketService
         return Md5Hashes[md5Hash];
     }
 
-    private static string[] DetermineAlphabets(int nbSlaves)
+    private static string[] DetermineAlphabets(int nbSlaves, int maxPasswordLength)
     {
         var alphabetsToReturn = new string[nbSlaves];
         long alphabetSize;
         
         alphabetsToReturn[0] = "a";
         
-        if (MaxPasswordLength == 1)
+        if (maxPasswordLength == 1)
         {
-            alphabetSize = (long)Math.Round(Math.Pow(62, MaxPasswordLength));
+            alphabetSize = (long)Math.Round(Math.Pow(62, maxPasswordLength));
         }
         else
         {
-            alphabetSize = (long)Math.Round(Math.Pow(62, MaxPasswordLength + 1));
+            alphabetSize = (long)Math.Round(Math.Pow(62, maxPasswordLength + 1));
         }
 
         var splitPosition = (int)Math.Round((1.0 * alphabetSize / nbSlaves));
@@ -155,12 +154,12 @@ public class WebsocketService
         var previousEnd = "a";
         for (var i = 0; i < splitPositions.Length; i++)
         {
-            var transformIn64Format = new int[MaxPasswordLength];
+            var transformIn64Format = new int[maxPasswordLength];
             
-            for (var j = 0; j < MaxPasswordLength; j++)
+            for (var j = 0; j < maxPasswordLength; j++)
             {
-                var wordPos = (1.0 * splitPositions[i] / (62 * MaxPasswordLength)) * 62;
-                var letterPos = (int) Math.Round(((wordPos / MaxPasswordLength) * (j + 1)));
+                var wordPos = (1.0 * splitPositions[i] / (62 * maxPasswordLength)) * 62;
+                var letterPos = (int) Math.Round(((wordPos / maxPasswordLength) * (j + 1)));
                 var toLetter = letterPos % 62;
                 
                 transformIn64Format[j] = toLetter;
@@ -170,7 +169,7 @@ public class WebsocketService
 
             alphabetsToReturn[i] = previousEnd + "|" + nextWord;
 
-            var letterArray = new int[MaxPasswordLength];
+            var letterArray = new int[maxPasswordLength];
             for (var j = 0; j < transformIn64Format.Length; j++)
             {
                 var num = transformIn64Format[j];
@@ -187,12 +186,12 @@ public class WebsocketService
                     letterArray[j] = 0;
                     var depth = 1;
                     
-                    while (depth < MaxPasswordLength)
+                    while (depth < maxPasswordLength)
                     {
                         if (letterArray[j - depth] < 61)
                         {
                             letterArray[j - depth] += 1;
-                            depth = MaxPasswordLength;
+                            depth = maxPasswordLength;
                         }
                         else
                         {
@@ -211,7 +210,7 @@ public class WebsocketService
         }
 
         var howMany9 = "";
-        for (var i = 0; i < MaxPasswordLength; i++)
+        for (var i = 0; i < maxPasswordLength; i++)
             howMany9 += "9";
 
         alphabetsToReturn[nbSlaves - 1] = previousEnd + "|" + howMany9;

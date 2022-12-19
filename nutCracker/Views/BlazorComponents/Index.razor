@@ -6,7 +6,11 @@
 @inject DockerService DockerService
 @inject SweetAlertService Swal
 
+<label>Hash:</label>
 <input type="text" class="form-control" @bind="Hash" @onkeyup="InputKeyEvent"/>
+
+<label>Taille (max) du mot de passe (attention, plus la taille est élevé plus cela est long): @MaxPasswordLength</label>
+<input type="range" class="form-range" min="@MinMaxPaswordLength" max="@MaxMaxPaswordLength" @bind="MaxPasswordLength" />
 
 @if (!string.IsNullOrWhiteSpace(ConstantMessage))
 {
@@ -17,7 +21,12 @@
 
 @code 
 {
+    private const int MaxMaxPaswordLength = 20;
+    private const int MinMaxPaswordLength = 1;
+    
     private string Hash { get; set; } = string.Empty;
+    private int MaxPasswordLength { get; set; } = 4;
+    
     private string ConstantMessage { get; set; } = string.Empty;
     
     private async Task InputKeyEvent(KeyboardEventArgs e)
@@ -65,7 +74,7 @@
                     Console.WriteLine("new slave available");
                 }
         
-                var mdp = await WebsocketService.Crack(Hash);
+                var mdp = await WebsocketService.Crack(Hash, Math.Max(MinMaxPaswordLength, Math.Min(MaxMaxPaswordLength, MaxPasswordLength)));
 
                 if (mdp == null)
                 {
