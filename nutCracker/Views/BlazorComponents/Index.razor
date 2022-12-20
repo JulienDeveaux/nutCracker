@@ -78,22 +78,22 @@
             ShowLoaderOnConfirm = true,
             PreConfirm = new PreConfirmCallback(async () =>
             {
-                if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) == 0)
+                if (WebsocketService.GetNbSlaves(SlaveStatus.Ready) < Power.Value())
                 {
-                    var nbSlaves = WebsocketService.GetNbSlaves();
-            
-                    await DockerService.AddNewSlave();
+                    var nbSlaves = WebsocketService.GetNbSlaves(SlaveStatus.Ready);
+
+                    await DockerService.AddSlaves(Power.Value() - nbSlaves);
             
                     Console.WriteLine("awaiting new slave");
             
-                    while(nbSlaves == WebsocketService.GetNbSlaves())
+                    while(WebsocketService.GetNbSlaves(SlaveStatus.Ready) < Power.Value())
                     {
                         await Task.Delay(1000);
                     }
             
-                    Console.WriteLine("new slave available");
+                    Console.WriteLine("new slaves available");
                 }
-        
+
                 var mdp = await WebsocketService.Crack(Hash, Math.Max(MinMaxPaswordLength, Math.Min(MaxMaxPaswordLength, MaxPasswordLength)));
 
                 if (mdp == null)

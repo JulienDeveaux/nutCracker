@@ -89,9 +89,14 @@ public class DockerService
 
     public async Task AddNewSlave()
     {
+        await AddSlaves(1);
+    }
+    
+    public async Task AddSlaves(int nbSlavesToAdd)
+    {
         var serviceSpec = SlavesService.Spec;
 
-        serviceSpec.Mode.Replicated.Replicas++;
+        serviceSpec.Mode.Replicated.Replicas += Convert.ToUInt64(nbSlavesToAdd);
         
         var response = await Client.Swarm.UpdateServiceAsync(SlavesService.ID, new ServiceUpdateParameters
         {

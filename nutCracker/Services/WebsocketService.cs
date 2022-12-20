@@ -9,6 +9,7 @@ public class WebsocketService
     public const string Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private static int _totalSlavesCount = 0;
+    private static readonly Semaphore ToTalCountSemaphore = new(1, 1);
 
     private List<Slave> Slaves { get; }
 
@@ -32,12 +33,14 @@ public class WebsocketService
 
     public async Task RegisterSlave(WebSocket socket)
     {
+        ToTalCountSemaphore.WaitOne();
         var slave = new Slave
         {
             Id = _totalSlavesCount++,
             WebSocket = socket,
             Status = SlaveStatus.Ready
         };
+        ToTalCountSemaphore.Release();
 
         Slaves.Add(slave);
 
@@ -55,18 +58,31 @@ public class WebsocketService
 
             var tab = message.Split(' ');
 
-            switch (tab[0])
+            if (slave.HashInWorking == null)
             {
-                case "found" when tab.Length == 3:
-                    Md5Hashes[tab[1]] = tab[2];
-                    slave.Status = SlaveStatus.Ready;
-                    break;
-
-                case "notFound" when tab.Length == 3:
-                    Md5Hashes[tab[1]] = string.Empty;
-                    slave.Status = SlaveStatus.Ready;
-                    break;
+                Console.WriteLine($"no hash in working for slave {slave.Id}");
+                continue;
             }
+
+            // ne pas centralisé les résultats (ex: slave.* = * en dehors des ifs) car rien ne dit qu'un slave 
+            // ne renverras pas un autre type de message (code exterieur au projet donc inconnu)
+            if (tab.Length == 3 && tab[0].StartsWith("found"))
+            {
+                Md5Hashes[slave.HashInWorking] = tab[2];
+                
+                slave.Status = SlaveStatus.Ready;
+                slave.LastWork = DateTime.Now;
+                slave.HashInWorking = null;
+            }
+            else if (message.StartsWith("notfound"))
+            {
+                Md5Hashes[slave.HashInWorking] ??= string.Empty;
+                    
+                slave.Status = SlaveStatus.Ready;
+                slave.LastWork = DateTime.Now;
+                slave.HashInWorking = null;
+            }
+            
         } while (!received.CloseStatus.HasValue);
 
         slave.Status = SlaveStatus.Dead;
@@ -92,7 +108,7 @@ public class WebsocketService
 
         if (waitingSlaves.Length == 0)
             return null;
-
+        Console.WriteLine("determine alphabets");
         var allAlphabets = DetermineAlphabets(waitingSlaves.Length, maxPasswordLength);
 
         Console.WriteLine(string.Join("\n", allAlphabets));
@@ -115,12 +131,16 @@ public class WebsocketService
                 WebSocketMessageType.Text,
                 true,
                 CancellationToken.None);
+
+            slave.HashInWorking = md5Hash;
         }
 
-        while (string.IsNullOrWhiteSpace(Md5Hashes[md5Hash]) && waitingSlaves.Any(s => s.Status == SlaveStatus.Working))
+        while (Md5Hashes[md5Hash] is null || Md5Hashes[md5Hash].Length == 0 && waitingSlaves.Any(s => s.Status == SlaveStatus.Working))
         {
             await Task.Delay(100);
         }
+        
+        Console.WriteLine("crack ended");
 
         return Md5Hashes[md5Hash];
     }
@@ -216,5 +236,34 @@ public class WebsocketService
         alphabetsToReturn[nbSlaves - 1] = previousEnd + "|" + howMany9;
         
         return alphabetsToReturn;
+    }
+
+    public Dictionary<string, string>[] SlavesStatus()
+    {
+        return Slaves.Select(s => new Dictionary<string, string>
+        {
+            {"id", s.Id.ToString()},
+            {"status", s.Status.ToString()},
+            {"webSocketState", s.WebSocket.State.ToString()},
+            {"lastWork", s.LastWork.ToString("dd/MM/yyyy HH:mm:ss")},
+            {"hashInWorking", s.HashInWorking}
+        }).ToArray();
+    }
+
+    internal void VerifSlaves()
+    {
+        foreach (var slave in Slaves.ToList())
+        {
+            if (slave.WebSocket.State != WebSocketState.Open)
+            {
+                slave.Status = SlaveStatus.Dead;
+                slave.HashInWorking = null;
+            }
+            else if (slave.Status != SlaveStatus.Working)
+            {
+                slave.Status = SlaveStatus.Ready;
+                slave.HashInWorking = null;
+            }
+        }
     }
 }

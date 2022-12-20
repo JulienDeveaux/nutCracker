@@ -13,6 +13,8 @@ builder.Services.AddSweetAlert2();
 builder.Services.AddSingleton<DockerService>();
 builder.Services.AddSingleton<WebsocketService>();
 
+builder.Services.AddHostedService<SlaveVerifService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

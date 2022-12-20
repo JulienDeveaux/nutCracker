@@ -32,6 +32,15 @@ public class HomeController : Controller
         
         return View();
     }
+
+    [HttpGet("slaves")]
+    public IActionResult Slaves()
+    {
+        ViewData["slaves"] = WebsocketService.SlavesStatus();
+        ViewData["ready"] = WebsocketService.GetNbSlaves(SlaveStatus.Ready);
+        
+        return View();
+    }
     
     [Route("/ws")]
     public async Task WebSocket()
