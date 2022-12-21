@@ -72,6 +72,9 @@ public class WebsocketService
                 Md5Hashes[slave.HashInWorking] = tab[2];
                 
                 slave.Status = SlaveStatus.Ready;
+
+                await StopOthersSlaves(slave.HashInWorking);
+
                 slave.LastWork = DateTime.Now;
                 slave.HashInWorking = null;
             }
@@ -91,6 +94,21 @@ public class WebsocketService
         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
 
         Slaves.Remove(slave);
+    }
+    
+    private async Task StopOthersSlaves(string md5Hash)
+    {
+        var tasks = Slaves
+            .Where(slave => slave.HashInWorking == md5Hash && slave.Status == SlaveStatus.Working)
+            .Select(slave => Task.Run(async () =>
+            {
+                await slave.WebSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("stop")), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                Console.WriteLine($"slave {slave.Id} stopped");
+            }))
+            .ToList();
+
+        await Task.WhenAll(tasks);
     }
 
     /// <summary>
