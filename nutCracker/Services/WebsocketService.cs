@@ -60,7 +60,8 @@ public class WebsocketService
 
             if (slave.HashInWorking == null)
             {
-                Console.WriteLine($"no hash in working for slave {slave.Id}");
+                if(!message.StartsWith("slave"))
+                    Console.WriteLine($"no hash in working for slave {slave.Id}");
                 continue;
             }
 
@@ -245,7 +246,7 @@ public class WebsocketService
             {"id", s.Id.ToString()},
             {"status", s.Status.ToString()},
             {"webSocketState", s.WebSocket.State.ToString()},
-            {"lastWork", s.LastWork.ToString("dd/MM/yyyy HH:mm:ss")},
+            {"lastWork", s.LastWork?.ToString("dd/MM/yyyy HH:mm:ss")},
             {"hashInWorking", s.HashInWorking}
         }).ToArray();
     }
@@ -264,6 +265,32 @@ public class WebsocketService
                 slave.Status = SlaveStatus.Ready;
                 slave.HashInWorking = null;
             }
+        }
+    }
+
+    internal int[] GetSlavesIdsToDown(int maxNbMinute = 5)
+    {
+        return Slaves.ToList()
+            .Where(slave => slave.Status == SlaveStatus.Ready && slave.LastWork != null && DateTime.Now - slave.LastWork > TimeSpan.FromMinutes(maxNbMinute))
+            .Select(s => s.Id)
+            .ToArray();
+    }
+
+    internal async Task DownSlaves(int[] ids)
+    {
+        foreach (var id in ids)
+        {
+            var slave = Slaves.FirstOrDefault(s => s.Id == id);
+            if (slave is null)
+                continue;
+            
+            await slave.WebSocket.SendAsync(
+                new ArraySegment<byte>(Encoding.UTF8.GetBytes("exit")),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None);
+
+            Slaves.Remove(slave);
         }
     }
 }

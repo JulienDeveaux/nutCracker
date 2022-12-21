@@ -107,6 +107,26 @@ public class DockerService
         SlavesService = await Client.Swarm.InspectServiceAsync(SlavesService.ID);
     }
 
+    public async Task RemoveSlaves(int nbToRemove)
+    {
+        var serviceSpec = SlavesService.Spec;
+
+        var nbToRemoveLong = Convert.ToUInt64(nbToRemove);
+
+        if (nbToRemoveLong > (serviceSpec.Mode.Replicated.Replicas ?? 0L))
+            nbToRemoveLong = (serviceSpec.Mode.Replicated.Replicas ?? 2L) - 1L;
+
+        serviceSpec.Mode.Replicated.Replicas -= nbToRemoveLong;
+        
+        var response = await Client.Swarm.UpdateServiceAsync(SlavesService.ID, new ServiceUpdateParameters
+        {
+            Service = serviceSpec,
+            Version = (long) SlavesService.Version.Index
+        });
+        
+        SlavesService = await Client.Swarm.InspectServiceAsync(SlavesService.ID);
+    }
+
     public async Task DeleteService()
     {
         await Client.Swarm.RemoveServiceAsync(SlavesService.ID);
