@@ -3,6 +3,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
+using nutCracker.Database;
 using nutCracker.Models;
 using nutCracker.Services;
 
@@ -11,6 +12,7 @@ namespace nutCracker.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly NutCrackerContext _database;
     
     private DockerService DockerService { get; }
     private WebsocketService WebsocketService { get; }
@@ -18,11 +20,13 @@ public class HomeController : Controller
     public HomeController(
         ILogger<HomeController> logger, 
         DockerService dockerService,
-        WebsocketService websocketService)
+        WebsocketService websocketService,
+        NutCrackerContext database)
     {
         _logger = logger;
         DockerService = dockerService;
         WebsocketService = websocketService;
+        _database = database;
     }
 
     [HttpGet]
@@ -36,8 +40,13 @@ public class HomeController : Controller
     [HttpGet("slaves")]
     public IActionResult Slaves()
     {
-        ViewData["slaves"] = WebsocketService.SlavesStatus();
-        ViewData["ready"] = WebsocketService.GetNbSlaves(SlaveStatus.Ready);
+        return View();
+    }
+    
+    [HttpGet("hashs")]
+    public IActionResult Hashs()
+    {
+        ViewData["hashs"] = _database.HashResults.ToArray();
         
         return View();
     }

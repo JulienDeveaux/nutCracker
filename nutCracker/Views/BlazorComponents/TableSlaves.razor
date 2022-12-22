@@ -1,0 +1,42 @@
+﻿@using nutCracker.Services
+@using nutCracker.Models
+
+@inject WebsocketService WebsocketService
+
+<h2>Slaves:</h2>
+
+<table class="table table-hover table-striped table-bordered">
+    <thead>
+    <tr>
+        <td>Id</td>
+        <td>State Status</td>
+        <td>Websocket status</td>
+        <td>Last working</td>
+        <td>current hash</td>
+    </tr>
+    </thead>
+    
+    <tbody>
+        @foreach (var slave in WebsocketService.SlavesStatus())
+        {
+            <tr>
+                <td>@slave["id"]</td>
+                <td>@slave["status"]</td>
+                <td>@slave["webSocketState"]</td>
+                <td>@slave["lastWork"]</td>
+                <td>@slave["hashInWorking"]</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p>Nb slave ready detected: @WebsocketService.GetNbSlaves(SlaveStatus.Ready)</p>
+
+@code {
+    protected override void OnParametersSet()
+    {
+        WebsocketService.SlavesChanged += (sender, slave) => InvokeAsync(StateHasChanged);
+        
+        base.OnParametersSet();
+    }
+}

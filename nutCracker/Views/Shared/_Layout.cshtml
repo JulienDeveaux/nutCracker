@@ -26,6 +26,10 @@
                     <li class="nav-item">
                         <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Slaves">Slaves state</a>
                     </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Hashs">Success Hashs</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -47,7 +51,7 @@
 
 <script src="_framework/blazor.server.js"></script>
 <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>
-<link rel="stylesheet" href="_content/CurrieTechnologies.Razor.SweetAlert2/darkTheme.min.css" id="darkSweetAlert" />
+<link rel="stylesheet" href="_content/CurrieTechnologies.Razor.SweetAlert2/darkTheme.min.css" id="darkSweetAlert"/>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,6 +1,6 @@
 using CurrieTechnologies.Razor.SweetAlert2;
-using Docker.DotNet;
-using Docker.DotNet.Models;
+using Microsoft.EntityFrameworkCore;
+using nutCracker.Database;
 using nutCracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddServerSideBlazor(o => o.DetailedErrors = true);
 builder.Services.AddSweetAlert2();
+
+builder.Services.AddDbContext<NutCrackerContext>(opts => 
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("NutCrackerContext")), 
+    ServiceLifetime.Scoped, 
+    ServiceLifetime.Scoped);
 
 builder.Services.AddSingleton<DockerService>();
 builder.Services.AddSingleton<WebsocketService>();

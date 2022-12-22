@@ -1,8 +1,23 @@
 version: '3'
 
 services: 
+  sql_server: 
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment: 
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=TruckDeF0uC0mmentCeM0tDePa55eEst5ecure
+      - MSSQL_PID=Standard
+    ports: 
+      - "4978:1433"
+    volumes: 
+      - sql_data:/var/opt/mssql:rw
+    networks: 
+      - nut_cracker
   nut_cracker:
     build: .
+    depends_on: 
+      sql_server:
+        condition: service_started
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
@@ -14,3 +29,6 @@ networks:
   nut_cracker:
     driver: overlay
     attachable: true
+    
+volumes:
+    sql_data:

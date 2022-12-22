@@ -1,0 +1,23 @@
+﻿<h2>Slaves:</h2>
+
+<table class="table table-hover table-striped table-bordered">
+    <thead>
+    <tr>
+        <td>MD5 hash</td>
+        <td>Résultat</td>
+    </tr>
+    </thead>
+    
+    <tbody>
+        @if (ViewData["hashs"] is HashResult[] hashs)
+        {
+            foreach (var hash in hashs)
+            {
+                <tr>
+                    <td>@hash.Hash</td>
+                    <td>@hash.Result</td>
+                </tr>
+            }   
+        }
+    </tbody>
+</table>

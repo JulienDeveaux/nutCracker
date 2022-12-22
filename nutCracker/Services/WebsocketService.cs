@@ -1,5 +1,7 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using nutCracker.Database;
 using nutCracker.Models;
 
 namespace nutCracker.Services;
@@ -19,11 +21,16 @@ public class WebsocketService
     ///  value = found
     /// </summary>
     private Dictionary<string, string> Md5Hashes { get; }
+    
+    private NutCrackerContext Database { get; }
+    
+    public event EventHandler<Slave> SlavesChanged = delegate { };
 
-    public WebsocketService()
+    public WebsocketService(NutCrackerContext database)
     {
         Slaves = new List<Slave>();
         Md5Hashes = new Dictionary<string, string>();
+        Database = database;
     }
 
     public int GetNbSlaves(SlaveStatus? status = null)
@@ -43,57 +50,79 @@ public class WebsocketService
         ToTalCountSemaphore.Release();
 
         Slaves.Add(slave);
+        
+        SlaveChangedCallback(slave);
 
         var buffer = new byte[4 * 1024];
 
         WebSocketReceiveResult received;
 
-        do
+        try
         {
-            received = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-            var message = Encoding.UTF8.GetString(buffer, 0, received.Count);
-
-            Console.WriteLine($"message received from slave {slave.Id}: '{message}'");
-
-            var tab = message.Split(' ');
-
-            if (slave.HashInWorking == null)
+            do
             {
-                if(!message.StartsWith("slave"))
-                    Console.WriteLine($"no hash in working for slave {slave.Id}");
-                continue;
-            }
+                received = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-            // ne pas centralisé les résultats (ex: slave.* = * en dehors des ifs) car rien ne dit qu'un slave 
-            // ne renverras pas un autre type de message (code exterieur au projet donc inconnu)
-            if (tab.Length == 3 && tab[0].StartsWith("found"))
-            {
-                Md5Hashes[slave.HashInWorking] = tab[2];
+                var message = Encoding.UTF8.GetString(buffer, 0, received.Count);
+
+                Console.WriteLine($"message received from slave {slave.Id}: '{message}'");
+
+                var tab = message.Split(' ');
+
+                if (slave.HashInWorking == null)
+                {
+                    if(!message.StartsWith("slave"))
+                        Console.WriteLine($"no hash in working for slave {slave.Id}");
+                    continue;
+                }
+
+                // ne pas centralisé les résultats (ex: slave.* = * en dehors des ifs) car rien ne dit qu'un slave 
+                // ne renverras pas un autre type de message (code exterieur au projet donc inconnu)
+                if (tab.Length == 3 && tab[0].StartsWith("found"))
+                {
+                    Md5Hashes[slave.HashInWorking] = tab[2];
+
+                    await Database.HashResults.AddAsync(new()
+                    {
+                        Hash = slave.HashInWorking,
+                        Result = tab[2]
+                    });
+                    await Database.SaveChangesAsync();
                 
-                slave.Status = SlaveStatus.Ready;
+                    slave.Status = SlaveStatus.Ready;
 
-                await StopOthersSlaves(slave.HashInWorking);
+                    await StopOthersSlaves(slave.HashInWorking);
 
-                slave.LastWork = DateTime.Now;
-                slave.HashInWorking = null;
-            }
-            else if (message.StartsWith("notfound"))
-            {
-                Md5Hashes[slave.HashInWorking] ??= string.Empty;
+                    slave.LastWork = DateTime.Now;
+                    slave.HashInWorking = null;
+                
+                    SlaveChangedCallback(slave);
+                }
+                else if (message.StartsWith("notfound"))
+                {
+                    Md5Hashes[slave.HashInWorking] ??= string.Empty;
                     
-                slave.Status = SlaveStatus.Ready;
-                slave.LastWork = DateTime.Now;
-                slave.HashInWorking = null;
-            }
+                    slave.Status = SlaveStatus.Ready;
+                    slave.LastWork = DateTime.Now;
+                    slave.HashInWorking = null;
+                
+                    SlaveChangedCallback(slave);
+                }
             
-        } while (!received.CloseStatus.HasValue);
+            } while (!received.CloseStatus.HasValue);
 
-        slave.Status = SlaveStatus.Dead;
+            slave.Status = SlaveStatus.Dead;
 
-        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+        }
+        catch (Exception e)
+        {
+            await Console.Error.WriteLineAsync($"error in slave {slave.Id}: {e.Message}");
+        }
 
         Slaves.Remove(slave);
+        
+        SlaveChangedCallback(slave);
     }
     
     private async Task StopOthersSlaves(string md5Hash)
@@ -105,6 +134,8 @@ public class WebsocketService
                 await slave.WebSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("stop")), WebSocketMessageType.Text, true, CancellationToken.None);
 
                 Console.WriteLine($"slave {slave.Id} stopped");
+                
+                SlaveChangedCallback(slave);
             }))
             .ToList();
 
@@ -152,6 +183,8 @@ public class WebsocketService
                 CancellationToken.None);
 
             slave.HashInWorking = md5Hash;
+            
+            SlaveChangedCallback(slave);
         }
 
         while (Md5Hashes[md5Hash] is null || Md5Hashes[md5Hash].Length == 0 && waitingSlaves.Any(s => s.Status == SlaveStatus.Working))
@@ -277,11 +310,15 @@ public class WebsocketService
             {
                 slave.Status = SlaveStatus.Dead;
                 slave.HashInWorking = null;
+                
+                SlaveChangedCallback(slave);
             }
             else if (slave.Status != SlaveStatus.Working)
             {
                 slave.Status = SlaveStatus.Ready;
                 slave.HashInWorking = null;
+                
+                SlaveChangedCallback(slave);
             }
         }
     }
@@ -289,7 +326,7 @@ public class WebsocketService
     internal int[] GetSlavesIdsToDown(int maxNbMinute = 5)
     {
         return Slaves.ToList()
-            .Where(slave => slave.Status == SlaveStatus.Ready && slave.LastWork != null && DateTime.Now - slave.LastWork > TimeSpan.FromMinutes(maxNbMinute))
+            .Where(slave => slave.WebSocket.State != WebSocketState.Open || slave.Status == SlaveStatus.Ready && slave.LastWork != null && DateTime.Now - slave.LastWork > TimeSpan.FromMinutes(maxNbMinute))
             .Select(s => s.Id)
             .ToArray();
     }
@@ -302,13 +339,21 @@ public class WebsocketService
             if (slave is null)
                 continue;
             
-            await slave.WebSocket.SendAsync(
-                new ArraySegment<byte>(Encoding.UTF8.GetBytes("exit")),
-                WebSocketMessageType.Text,
-                true,
-                CancellationToken.None);
+            if(slave.WebSocket.State == WebSocketState.Open)
+                await slave.WebSocket.SendAsync(
+                    new ArraySegment<byte>(Encoding.UTF8.GetBytes("exit")),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
 
             Slaves.Remove(slave);
+            
+            SlaveChangedCallback(slave);
         }
+    }
+
+    private Task SlaveChangedCallback(Slave slave)
+    {
+        return Task.Run(() => SlavesChanged.Invoke(this, slave));
     }
 }

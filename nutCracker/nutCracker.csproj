@@ -10,6 +10,11 @@
     <ItemGroup>
       <PackageReference Include="CurrieTechnologies.Razor.SweetAlert2" Version="5.4.0" />
       <PackageReference Include="Docker.DotNet" Version="3.125.12" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.1" />
     </ItemGroup>
 
 </Project>
