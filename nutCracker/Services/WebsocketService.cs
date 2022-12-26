@@ -199,95 +199,48 @@ public class WebsocketService
 
     private static string[] DetermineAlphabets(int nbSlaves, int maxPasswordLength)
     {
-        var alphabetsToReturn = new string[nbSlaves];
-        long alphabetSize;
-        
-        alphabetsToReturn[0] = "a";
-        
-        if (maxPasswordLength == 1)
-        {
-            alphabetSize = (long)Math.Round(Math.Pow(62, maxPasswordLength));
-        }
-        else
-        {
-            alphabetSize = (long)Math.Round(Math.Pow(62, maxPasswordLength + 1));
-        }
-
-        var splitPosition = (int)Math.Round((1.0 * alphabetSize / nbSlaves));
-        var splitPositions = new int[nbSlaves - 1];
-        
-        var it = splitPosition;
-        for (var i = 0; i < splitPositions.Length; i++)
-        {
-            splitPositions[i] = it;
-            it += splitPosition;
-        }
-
-        var previousEnd = "a";
-        for (var i = 0; i < splitPositions.Length; i++)
-        {
-            var transformIn64Format = new int[maxPasswordLength];
-            
-            for (var j = 0; j < maxPasswordLength; j++)
-            {
-                var wordPos = (1.0 * splitPositions[i] / (62 * maxPasswordLength)) * 62;
-                var letterPos = (int) Math.Round(((wordPos / maxPasswordLength) * (j + 1)));
-                var toLetter = letterPos % 62;
-                
-                transformIn64Format[j] = toLetter;
+        const string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var @base = alphabet.Length;
+        var nChars = Convert.ToInt32(Math.Pow(@base, maxPasswordLength)) - 1;
+        var workAmount = nChars / nbSlaves;
+        var schSpaces = new String[nbSlaves];
+        foreach (var i in Enumerable.Range(0, nbSlaves)) {
+            var beginIdx = workAmount * i + 1;
+            var endIdx = workAmount * (i + 1);
+            if (i == nbSlaves - 1 && endIdx != nChars) {
+                endIdx = nChars;
             }
 
-            var nextWord = transformIn64Format.Aggregate("", (current, letter) => current + Alphabet[letter]);
-
-            alphabetsToReturn[i] = previousEnd + "|" + nextWord;
-
-            var letterArray = new int[maxPasswordLength];
-            for (var j = 0; j < transformIn64Format.Length; j++)
+            var beginStr = "";
+            if (i == 0)
             {
-                var num = transformIn64Format[j];
-                if (num >= 62)
-                    num = 61;
-
-                letterArray[j] = num;
-
-                if (j != transformIn64Format.Length - 1) 
-                    continue;
-                
-                if (letterArray[j] == 61)
+                for(int j = 0; j < maxPasswordLength; j++)
                 {
-                    letterArray[j] = 0;
-                    var depth = 1;
-                    
-                    while (depth < maxPasswordLength)
-                    {
-                        if (letterArray[j - depth] < 61)
-                        {
-                            letterArray[j - depth] += 1;
-                            depth = maxPasswordLength;
-                        }
-                        else
-                        {
-                            letterArray[j - depth] = 0;
-                            depth++;
-                        }
-                    }
-                }
-                else
-                {
-                    letterArray[j] += 1;
+                    beginStr += alphabet[0];
                 }
             }
+            else
+            {
+                beginStr = ConvertBase(beginIdx, alphabet);
+            }
+            var endStr = ConvertBase(endIdx, alphabet)[-maxPasswordLength];
+            schSpaces[i] = beginStr + "|" + endStr;
+        }
+        return schSpaces;
+    }
 
-            previousEnd = letterArray.Aggregate("", (current, letter) => current + Alphabet[letter]);
+    private static string ConvertBase(int nbr, String alphabet)
+    {
+        var newBase = alphabet.Length;
+        var res = "";
+        var n = nbr;
+        while (n > 0)
+        {
+            res = alphabet[Convert.ToInt32(n) % newBase] + res;
+            n = n / newBase;
         }
 
-        var howMany9 = "";
-        for (var i = 0; i < maxPasswordLength; i++)
-            howMany9 += "9";
-
-        alphabetsToReturn[nbSlaves - 1] = previousEnd + "|" + howMany9;
-        
-        return alphabetsToReturn;
+        return res;
     }
 
     public Dictionary<string, string>[] SlavesStatus()
