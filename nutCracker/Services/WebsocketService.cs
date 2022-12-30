@@ -201,7 +201,7 @@ public class WebsocketService
     {
         const string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var @base = alphabet.Length;
-        var nChars = Convert.ToInt32(Math.Pow(@base, maxPasswordLength)) - 1;
+        var nChars = Convert.ToInt64(Math.Pow(@base, maxPasswordLength)) - 1;
         var workAmount = nChars / nbSlaves;
         var schSpaces = new String[nbSlaves];
         foreach (var i in Enumerable.Range(0, nbSlaves)) {
@@ -229,14 +229,14 @@ public class WebsocketService
         return schSpaces;
     }
 
-    private static string ConvertBase(int nbr, String alphabet)
+    private static string ConvertBase(long nbr, String alphabet)
     {
         var newBase = alphabet.Length;
         var res = "";
         var n = nbr;
         while (n > 0)
         {
-            res = alphabet[Convert.ToInt32(n) % newBase] + res;
+            res = alphabet[(int) (Convert.ToInt64(n) % newBase)] + res;
             n = n / newBase;
         }
 
