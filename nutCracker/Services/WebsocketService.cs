@@ -223,7 +223,7 @@ public class WebsocketService
             {
                 beginStr = ConvertBase(beginIdx, alphabet);
             }
-            var endStr = ConvertBase(endIdx, alphabet)[-maxPasswordLength];
+            var endStr = ConvertBase(endIdx, alphabet);
             schSpaces[i] = beginStr + "|" + endStr;
         }
         return schSpaces;
@@ -236,7 +236,7 @@ public class WebsocketService
         var n = nbr;
         while (n > 0)
         {
-            res = alphabet[(int) (Convert.ToInt64(n) % newBase)] + res;
+            res = alphabet[(int) (n % newBase)] + res;
             n = n / newBase;
         }
 
