@@ -1,4 +1,5 @@
 using CurrieTechnologies.Razor.SweetAlert2;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using nutCracker.Database;
 using nutCracker.Services;
@@ -45,6 +46,25 @@ app.MapControllerRoute(
 app.MapBlazorHub();
 
 var dockerService = app.Services.GetService<DockerService>();
+
+for(var i = 0; i < 5; i++)
+{
+    try
+    {
+        SqlConnection connection = new SqlConnection(builder.Configuration.GetConnectionString("NutCrackerContext"));
+        connection.Open();
+        if (connection.State == System.Data.ConnectionState.Open)
+        {
+            connection.Close();
+            break;
+        }
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine($"{i} - Retry connecting to database...");
+    }
+    await Task.Delay(1500);
+}
 
 try
 {
