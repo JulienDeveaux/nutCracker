@@ -27,8 +27,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
@@ -51,18 +49,20 @@ for(var i = 0; i < 5; i++)
 {
     try
     {
-        SqlConnection connection = new SqlConnection(builder.Configuration.GetConnectionString("NutCrackerContext"));
-        connection.Open();
+        var connection = new SqlConnection(builder.Configuration.GetConnectionString("NutCrackerContext"));
+        await connection.OpenAsync();
+        
         if (connection.State == System.Data.ConnectionState.Open)
         {
-            connection.Close();
+            await connection.CloseAsync();
             break;
         }
     }
-    catch (Exception e)
+    catch (Exception)
     {
         Console.WriteLine($"{i} - Retry connecting to database...");
     }
+    
     await Task.Delay(1500);
 }
 

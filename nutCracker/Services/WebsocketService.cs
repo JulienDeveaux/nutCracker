@@ -199,45 +199,44 @@ public class WebsocketService
 
     private static string[] DetermineAlphabets(int nbSlaves, int maxPasswordLength)
     {
-        const string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var @base = alphabet.Length;
+        var @base = Alphabet.Length;
         var nChars = Convert.ToInt64(Math.Pow(@base, maxPasswordLength)) - 1;
         var workAmount = nChars / nbSlaves;
-        var schSpaces = new String[nbSlaves];
-        foreach (var i in Enumerable.Range(0, nbSlaves)) {
+        var schSpaces = new string[nbSlaves];
+        
+        foreach (var i in Enumerable.Range(0, nbSlaves)) 
+        {
             var beginIdx = workAmount * i + 1;
             var endIdx = workAmount * (i + 1);
-            if (i == nbSlaves - 1 && endIdx != nChars) {
+            
+            if (i == nbSlaves - 1 && endIdx != nChars)
                 endIdx = nChars;
-            }
 
             var beginStr = "";
             if (i == 0)
-            {
                 for(int j = 0; j < maxPasswordLength; j++)
-                {
-                    beginStr += alphabet[0];
-                }
-            }
+                    beginStr += Alphabet[0];
             else
-            {
-                beginStr = ConvertBase(beginIdx, alphabet);
-            }
-            var endStr = ConvertBase(endIdx, alphabet);
+                beginStr = ConvertBase(beginIdx);
+            
+            var endStr = ConvertBase(endIdx);
+            
             schSpaces[i] = beginStr + "|" + endStr;
         }
+        
         return schSpaces;
     }
 
-    private static string ConvertBase(long nbr, String alphabet)
+    private static string ConvertBase(long nbr)
     {
-        var newBase = alphabet.Length;
+        var newBase = Alphabet.Length;
         var res = "";
         var n = nbr;
+        
         while (n > 0)
         {
-            res = alphabet[(int) (n % newBase)] + res;
-            n = n / newBase;
+            res = Alphabet[(int) (n % newBase)] + res;
+            n /= newBase;
         }
 
         return res;

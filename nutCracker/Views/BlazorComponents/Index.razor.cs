@@ -11,7 +11,7 @@ namespace nutCracker.Views.BlazorComponents;
 
 public partial class Index
 {
-    private const int MaxMaxPaswordLength = 10;
+    private const int MaxMaxPaswordLength = 12;
     private const int MinMaxPaswordLength = 1;
 
     [Inject] private WebsocketService WebsocketService { get; set; }
