@@ -51,6 +51,12 @@ public class HomeController : Controller
         return View();
     }
     
+    [HttpGet("authors")]
+    public IActionResult Authors()
+    {
+        return View();
+    }
+    
     [Route("/ws")]
     public async Task WebSocket()
     {
