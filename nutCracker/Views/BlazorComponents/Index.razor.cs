@@ -133,5 +133,6 @@ public partial class Index
             AllowOutsideClick = true
         });
         _ = JsRuntime.InvokeVoidAsync("loadingFinish", mdp);
+        ConstantMessage = $"Dernier résultat: {mdp}";
     }
 }
