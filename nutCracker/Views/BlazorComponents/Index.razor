@@ -1,33 +1,47 @@
 ﻿@using nutCracker.Models
+@using nutCracker.Services
+@using System.Text.Encodings.Web
+
+<p class="text-break">
+    Site permettant de retrouver un mot à partir du md5 de celui-ci. Pour celà le mot ne doit contenir que les caractères suivant: "@(WebsocketService.Alphabet)"
+</p>
 
 <label>Hash:</label>
 <input type="text" class="form-control" @bind="Hash" @onkeyup="InputKeyEvent"/>
 <br/>
-<label>Taille du mot de passe (attention, plus la taille est élevé plus cela est long): @MaxPasswordLength</label>
+<label>Taille du mot de passe: @MaxPasswordLength</label>
 <input type="range" class="form-range" min="@MinMaxPaswordLength" max="@MaxMaxPaswordLength" @bind="MaxPasswordLength" />
 
 <br/>
 
-<p class="text-start">Puissance:</p>
-@foreach (var power in Enum.GetValues<AlgoPower>())
-{
-    var powerValue = power.Value();
-    
-    <div class="w-100 text-start">
-        <div class="form-check form-check-inline">
-            <label class="form-check-label" for="power-@powerValue">@power (@powerValue))</label>
-            <input type="radio" 
-                   class="form-check-input" 
-                   name="power" id="power-@powerValue" 
-                   checked="@(power == Power)"
-                   @onchange="() => Power = power"/>
-        </div>
-    </div>
+<p>Puissance:</p>
+@{
+    var powerValues = Enum.GetValues<AlgoPower>();
 }
+
+<div class="row">
+    @foreach (var power in powerValues)
+        {
+            var powerValue = power.Value();
+        
+            <div class="text-start col-@(Math.Ceiling(12.0/ (powerValues.Length / 2.0)))">
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label" for="power-@powerValue">@power (@powerValue)</label>
+                    <input type="radio"
+                           class="form-check-input"
+                           name="power" id="power-@powerValue"
+                           checked="@(power == Power)"
+                           @onchange="() => Power = power"/>
+                </div>
+            </div>
+        }
+</div>
 
 @if (!string.IsNullOrWhiteSpace(ConstantMessage))
 {
-    <p>@ConstantMessage</p>
+    <p class="text-center">@ConstantMessage</p>
 }
 
-<button class="btn btn-success" @onclick="DeHash">Déhasher</button>
+<div class="text-center w-100">
+    <button class="btn btn-success" @onclick="DeHash">Déhasher</button>
+</div>

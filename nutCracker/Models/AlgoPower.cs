@@ -9,8 +9,8 @@ public enum AlgoPower: byte
     FastestPlus = 16,
     Extreme = 32,
     ExtremePlus = 64,
-    Haaaaaaaaaaaaaaaaaaaaaaaaa = 128,
-    IamDead = byte.MaxValue
+    Haaaaaa = 128,
+    IamDead = 245 // max value before infinite waiting = 249
 }
 
 public static class AlgoPowerExtension
