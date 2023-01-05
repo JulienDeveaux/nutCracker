@@ -199,8 +199,7 @@ public class WebsocketService
 
     private static string[] DetermineAlphabets(int nbSlaves, int maxPasswordLength)
     {
-        var @base = Alphabet.Length;
-        var nChars = Convert.ToInt64(Math.Pow(@base, maxPasswordLength)) - 1;
+        var nChars = Convert.ToInt64(Math.Pow(Alphabet.Length, maxPasswordLength)) - 1;
         var workAmount = nChars / nbSlaves;
         var schSpaces = new string[nbSlaves];
         
@@ -211,13 +210,10 @@ public class WebsocketService
             
             if (i == nbSlaves - 1 && endIdx != nChars)
                 endIdx = nChars;
-
-            var beginStr = "";
-            if (i == 0)
-                for(int j = 0; j < maxPasswordLength; j++)
-                    beginStr += Alphabet[0];
-            else
-                beginStr = ConvertBase(beginIdx);
+            
+            var beginStr = i == 0 ? 
+                string.Join("", from j in Enumerable.Range(0, maxPasswordLength) select Alphabet[0]) 
+                : ConvertBase(beginIdx);
             
             var endStr = ConvertBase(endIdx);
             
@@ -229,14 +225,13 @@ public class WebsocketService
 
     private static string ConvertBase(long nbr)
     {
-        var newBase = Alphabet.Length;
         var res = "";
         var n = nbr;
         
         while (n > 0)
         {
-            res = Alphabet[(int) (n % newBase)] + res;
-            n /= newBase;
+            res = Alphabet[(int) (n % Alphabet.Length)] + res;
+            n /= Alphabet.Length;
         }
 
         return res;
